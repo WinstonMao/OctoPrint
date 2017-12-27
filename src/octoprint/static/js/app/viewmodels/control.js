@@ -290,6 +290,20 @@ $(function() {
             OctoPrint.printer.setFlowrate(self.flowRate());
         };
 
+        self.stop = function () {
+	    //alert("SHOW M20?  ");
+            //OctoPrint.job.cancel();//2017-8-7 17:27:51
+	    //alert("SHOW M21?  ");
+	   	x=0;
+	    	$("#level-button").text("Level Platform");
+		stopc=['M124',
+		'M104 S0'];
+		self.sendCustomCommand({type:'commands',commands:stopc});
+
+        };		
+
+
+		
         self._sendECommand = function (dir) {
             var length = self.extrusionAmount() || self.settings.printer_defaultExtrusionLength();
             OctoPrint.printer.extrude(length * dir);
