@@ -956,6 +956,9 @@ class MachineCom(object):
 	def _cancel_preparation_done(self):
 		self._recordFilePosition()
 		self._callback.on_comm_print_job_cancelled()
+		self.sendCommand("G91")
+		self.sendCommand("G1 Z10 F500")
+		self.sendCommand("G90")
 
 	def cancelPrint(self, firmware_error=None, disable_log_position=False):
 		if not self.isOperational():
@@ -969,31 +972,54 @@ class MachineCom(object):
 			# we are streaming, we handle cancelling that differently...
 			self.cancelFileTransfer()
 			return
+		
+		# def _on_M400_sent():
+			# # we don't call on_print_job_cancelled on our callback here
+			# # because we do this only after our M114 has been answered
+			# # by the firmware
+			# self._record_cancel_data = True
+			# self.sendCommand("M114")
 
+		# with self._jobLock:
+			# self._changeState(self.STATE_OPERATIONAL)
+
+			# if self.isSdFileSelected():
+				# self.sendCommand("M25")    # pause print
+				# self.sendCommand("M27")    # get current byte position in file
+				# self.sendCommand("M29")
+				# self.sendCommand("M124")
+				# # self.sendCommand("M26 S0") # reset position in file to byte 0
+				# if self._sd_status_timer is not None:
+					# try:
+						# self._sd_status_timer.cancel()
+					# except:
+						# pass
+
+			# if self._log_position_on_cancel and not disable_log_position:
+				# self.sendCommand("M400", on_sent=_on_M400_sent)
+			# else:
+				# self._cancel_preparation_done()
 		def _on_M400_sent():
-			# we don't call on_print_job_cancelled on our callback here
+			# we don't call on_print_job_paused on our callback here
 			# because we do this only after our M114 has been answered
 			# by the firmware
-			self._record_cancel_data = True
+			# self._record_cancel_data = True #the reason to block the program 2017-12-27 21:19:03
 			self.sendCommand("M114")
-
+			self.sendCommand("G91")
+			self.sendCommand("G1 Z10 F500")
+			self.sendCommand("G90")
+			self.sendCommand("M104 S0 T0")
+			self.sendCommand("M104 S0 T1")
+			self.sendCommand("M140 S0")
 		with self._jobLock:
 			self._changeState(self.STATE_OPERATIONAL)
-
 			if self.isSdFileSelected():
-				self.sendCommand("M25")    # pause print
-				self.sendCommand("M27")    # get current byte position in file
-				self.sendCommand("M26 S0") # reset position in file to byte 0
-				if self._sd_status_timer is not None:
-					try:
-						self._sd_status_timer.cancel()
-					except:
-						pass
-
+				self.sendCommand("M25") # pause print
 			if self._log_position_on_cancel and not disable_log_position:
 				self.sendCommand("M400", on_sent=_on_M400_sent)
 			else:
 				self._cancel_preparation_done()
+		
 
 	def _pause_preparation_done(self):
 		self._callback.on_comm_print_job_paused()
@@ -1013,7 +1039,9 @@ class MachineCom(object):
 
 				self._changeState(self.STATE_PRINTING)
 				self._callback.on_comm_print_job_resumed()
-
+				self.sendCommand("G91")
+				self.sendCommand("G1 Z-10 F500")
+				self.sendCommand("G90")
 				if self.isSdFileSelected():
 					self.sendCommand("M24")
 					self.sendCommand("M27")
@@ -1039,6 +1067,9 @@ class MachineCom(object):
 					# by the firmware
 					self._record_pause_data = True
 					self.sendCommand("M114")
+					self.sendCommand("G91")
+					self.sendCommand("G1 Z10 F500")
+					self.sendCommand("G90")
 
 				if self._log_position_on_pause:
 					self.sendCommand("M400", on_sent=_on_M400_sent)
